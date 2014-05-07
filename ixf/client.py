@@ -50,16 +50,16 @@ class IXFClient(object):
         cxn = httplib.HTTPSConnection(self.host, self.port, strict=True, timeout=self.timeout)
 
         headers = {
-                  "Content-type": "application/x-www-form-urlencoded",
                   "Accept": "text/plain"
                   }
 
         if self.user:
             auth = 'Basic ' + base64.urlsafe_b64encode("%s:%s" % (self.user, self.passwd))
-            header['Authorization'] = auth
+            headers['Authorization'] = auth
 
         if data:
             data = urllib.urlencode({'arg': json.dumps(data)})
+            headers["Content-type"] = "application/x-www-form-urlencoded"
 
 #        print "%s to %s data: '%s' " % (method, url, str(data))
         cxn.request(method, url, data, headers)
