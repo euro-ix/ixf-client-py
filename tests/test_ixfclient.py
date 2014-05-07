@@ -54,16 +54,19 @@ class TestIXFClient(unittest.TestCase):
         db = IXFClient()
         self.db.ixp_all(limit=1)
 
-    def test_get_all(self):
-        ixps = self.db.list_all("IXP")["IXP"]
+    def test_list_all(self):
+        ixps = self.db.list_all('IXP')['IXP']
         self.assertTrue(len(ixps) > 400)
 
-        last = self.db.ixp_all(limit=2)["IXP"]
+    def test_list_all_iter_cycle(self):
+        ixps = self.db.list_all('IXP')['IXP']
+
+        last = self.db.ixp_all(limit=2)['IXP']
         self.assertTrue(len(last) == 2)
 
         # iterate over all records 2 at a time
         for i in xrange(1, len(ixps) - 2):
-            obj = self.db.ixp_all(skip=i, limit=2)["IXP"]
+            obj = self.db.ixp_all(skip=i, limit=2)['IXP']
             self.assertEqual(2, len(obj))
 #            print "diff %s %s <> %s %s" % (last.keys()[0], last.keys()[1], obj.keys()[0], obj.keys()[1])
             diff = DictDiffer(last, obj)
@@ -71,16 +74,20 @@ class TestIXFClient(unittest.TestCase):
             self.assertTrue(len(diff.removed()) == 1)
             last = obj
 
+    def test_list_all_iter(self):
+        skip = 13
+        last = self.db.ixp_all(skip=skip, limit=2)['IXP']
+        self.assertTrue(len(last) == 2)
+
         # same skip to check for idempotence
         for i in xrange(128):
-            skip = len(ixps) - 3
-            obj = self.db.ixp_all(skip=skip, limit=2)["IXP"]
+            obj = self.db.ixp_all(skip=skip, limit=2)['IXP']
             self.assertTrue(len(obj) == 2)
             diff = DictDiffer(last, obj)
             self.assertEqual(0, len(diff.added()))
             self.assertEqual(0, len(diff.removed()))
 
-        obj = self.db.ixp_all(skip=41, limit=1)["IXP"]
+        obj = self.db.ixp_all(skip=41, limit=1)['IXP']
         self.assertEqual(len(obj), 1)
         #self.db.ixp_all(skip=1)
         pass
@@ -94,7 +101,7 @@ class TestIXFClient(unittest.TestCase):
             "full_name": "Test IXP",
             "short_name": "TIX",
             }
-        obj = self.db.save("IXP", data)
+        obj = self.db.save('IXP', data)
         self.assertIn("id", obj)
         id = obj["id"]
 
