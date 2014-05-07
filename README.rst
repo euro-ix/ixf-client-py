@@ -56,21 +56,21 @@ Create the connection
 .. code-block:: python
 
     # anonymous
-    ixf = IXFClient()
+    ixfc = IXFClient()
 
 or
 
 .. code-block:: python
 
     # writes require authentication
-    ixf = IXFClient(user='guest, password='guest')
+    ixfc = IXFClient(user='guest, password='guest')
 
 or
 
 .. code-block:: python
 
     # override to localhost for development
-    ixf = IXFClient(host="localhost", port=8000, user="test", password="test")
+    ixfc = IXFClient(host="localhost", port=8000, user="test", password="test")
 
 
 Common operations
@@ -79,13 +79,13 @@ Common operations
 .. code-block:: python
 
     # list all records of type IXP
-    print ixf.list_all('IXP')
+    print ixfc.list_all('IXP')
 
     # get IXP42
-    print ixf.get('IXP', 42)
+    print ixfc.get('IXP', 42)
 
     # delete IXP42
-    print ixf.rm('IXP', 42)
+    print ixfc.rm('IXP', 42)
 
     # create new IXP
     data = {
@@ -93,13 +93,13 @@ Common operations
         "short_name": "TIX",
         }
     response = self.db.save("IXP", data)
-    ixpid = obj['id']
+    ixpid = response['id']
 
     # update from keyword variables
-    ixf.update('IXP', 42, full_name="Test IXP", short_name="TIX")
+    ixfc.update('IXP', 42, full_name="Test IXP", short_name="TIX")
 
     # update from dict
-    ixf.update('IXP', 42, **data)
+    ixfc.update('IXP', 42, **data)
 
 
 Any errors throw exceptions
@@ -107,8 +107,8 @@ Any errors throw exceptions
 
 .. code-block:: python
 
-    # try to get a non existant IXP
-    ixf.get('IXP', 999999999)
+    # try to get a non existent IXP
+    ixfc.get('IXP', 999999999)
 
 results in:
 
