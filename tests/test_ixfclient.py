@@ -7,34 +7,6 @@ import unittest
 
 from ixf import IXFClient
 
-class DictDiffer(object):
-    """
-    Calculate the difference between two dictionaries as:
-    (1) items added
-    (2) items removed
-    (3) keys same in both but changed values
-    (4) keys same in both and unchanged values
-    """
-    def __init__(self, current_dict, past_dict):
-        self.current_dict, self.past_dict = current_dict, past_dict
-        self.current_keys, self.past_keys = [
-            set(d.keys()) for d in (current_dict, past_dict)
-        ]
-        self.intersect = self.current_keys.intersection(self.past_keys)
-
-    def added(self):
-        return self.current_keys - self.intersect
-
-    def removed(self):
-        return self.past_keys - self.intersect
-
-    def changed(self):
-        return set(o for o in self.intersect
-                   if self.past_dict[o] != self.current_dict[o])
-
-    def unchanged(self):
-        return set(o for o in self.intersect
-                   if self.past_dict[o] == self.current_dict[o])
 
 class TestIXFClient(unittest.TestCase):
 
@@ -60,40 +32,34 @@ class TestIXFClient(unittest.TestCase):
         self.assertGreater(len(ixps), 400)
 
     def test_all_iter_cycle(self):
-        return
         ixps = self.db.all('IXP')
 
         last = self.db.ixp_all(limit=2)
-        self.assertTrue(len(last) == 2)
+        self.assertEqual(len(last), 2)
 
         # iterate over all records 2 at a time
-        for i in xrange(1, len(ixps) - 2):
+        #for i in xrange(1, len(ixps) - 2):
+        for i in xrange(1, 100):
             obj = self.db.ixp_all(skip=i, limit=2)
             self.assertEqual(2, len(obj))
+            self.assertGreater(obj[1]['id'], obj[0]['id'])
+            self.assertEqual(last[1], obj[0])
 #            print "diff %s %s <> %s %s" % (last.keys()[0], last.keys()[1], obj.keys()[0], obj.keys()[1])
-            diff = DictDiffer(last, obj)
-            self.assertTrue(len(diff.added()) == 1)
-            self.assertTrue(len(diff.removed()) == 1)
             last = obj
 
     def test_all_iter(self):
-        return
         skip = 13
         last = self.db.ixp_all(skip=skip, limit=2)
-        print "last:", last
         self.assertEqual(len(last), 2)
 
         # same skip to check for idempotence
         for i in xrange(128):
             obj = self.db.ixp_all(skip=skip, limit=2)
-            self.assertTrue(len(obj) == 2)
-            diff = DictDiffer(last, obj)
-            self.assertEqual(0, len(diff.added()))
-            self.assertEqual(0, len(diff.removed()))
+            self.assertEqual(last[0]['id'], obj[0]['id'])
+            self.assertEqual(last[1]['id'], obj[1]['id'])
 
         obj = self.db.ixp_all(skip=41, limit=1)
         self.assertEqual(len(obj), 1)
-        #self.db.ixp_all(skip=1)
         pass
 
     def test_get(self):
