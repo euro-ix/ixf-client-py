@@ -55,13 +55,13 @@ class TestIXFClient(unittest.TestCase):
         db = IXFClient()
         self.db.ixp_all(limit=1)
 
-    def test_list_all(self):
-        ixps = self.db.list_all('IXP')
+    def test_all(self):
+        ixps = self.db.all('IXP')
         self.assertGreater(len(ixps), 400)
 
-    def test_list_all_iter_cycle(self):
+    def test_all_iter_cycle(self):
         return
-        ixps = self.db.list_all('IXP')
+        ixps = self.db.all('IXP')
 
         last = self.db.ixp_all(limit=2)
         self.assertTrue(len(last) == 2)
@@ -76,7 +76,7 @@ class TestIXFClient(unittest.TestCase):
             self.assertTrue(len(diff.removed()) == 1)
             last = obj
 
-    def test_list_all_iter(self):
+    def test_all_iter(self):
         return
         skip = 13
         last = self.db.ixp_all(skip=skip, limit=2)

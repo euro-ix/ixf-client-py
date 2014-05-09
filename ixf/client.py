@@ -20,6 +20,7 @@ class IXFClient(object):
         self.user = None
         self.password = None
         self.timeout = None
+        self.validate_ssl = True
 
         # overwrite any param from keyword args
         for k in kwargs:
@@ -62,7 +63,6 @@ class IXFClient(object):
 
 #        print "%s %s headers:'%s' data:'%s' " % (method, url, str(headers), str(data))
         cxn.request(method, url, data, headers)
-
         return cxn.getresponse()
 
     def _throw(self, res, data):
@@ -78,10 +78,10 @@ class IXFClient(object):
 
     def _load(self, res):
         try:
-#            data = json.load(res)
-            data = res.read()
-            print "%d got data: %s" % (res.status, data)
-            data = json.loads(data)
+            data = json.load(res)
+#            data = res.read()
+#            print "%d got data: %s" % (res.status, data)
+#            data = json.loads(data)
 
         except ValueError:
             data = {}
@@ -101,7 +101,7 @@ class IXFClient(object):
         if '_id' in data:
             del data['_id']
 
-    def list_all(self, typ, **kwargs):
+    def all(self, typ, **kwargs):
         return self._load(self._request(self._url(typ, **kwargs)))
 
     def get(self, typ, id):
@@ -116,21 +116,20 @@ class IXFClient(object):
             data = res.read()
             self._throw(res, data)
 
-        print "loc", res.getheader('Location')
         loc = res.getheader('Location')
         if loc.startswith('/'):
             return self._load(self._request(loc))
 
-        #self._new_connection(res.getheader('Location'))
-
-# check schema
-        #print self._new_connection(res.getheader('Location'))
-
         url = urlparse.urlparse(loc)
-
-#        return self._load(self._request(data['meta']['url']))
         cxn = httplib.HTTPSConnection(url.netloc, strict=True, timeout=self.timeout)
+# TODO check scheme, add args
         return self._load(self._request(url.path, cxn=cxn))
+
+    def update(self, typ, id, **kwargs):
+        """
+        update just fields sent by keyword args
+        """
+        return self._load(self._request(self._url(typ, id), 'PUT', kwargs))
 
     def save(self, typ, data):
         """
@@ -141,17 +140,12 @@ class IXFClient(object):
 
         return self.create(typ, data)
 
-    def update(self, typ, id, **kwargs):
-        """
-        update just fields sent by keyword args
-        """
-        return self._load(self._request(self._url(typ, id), 'PUT', kwargs))
-
     def rm(self, typ, id):
         """
         remove typ by id
         """
         return self._load(self._request(self._url(typ, id), 'DELETE'))
+
 
     def ixp_all(self, **kwargs):
         """
@@ -160,7 +154,7 @@ class IXFClient(object):
             skip : number of records to skip
             limit : number of records to limit request to
         """
-        return self.list_all('IXP', **kwargs)
+        return self.all('IXP', **kwargs)
 
     def ixp(self, id):
         """
