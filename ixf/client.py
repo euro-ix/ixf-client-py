@@ -104,6 +104,12 @@ class IXFClient(object):
             del data['_id']
 
     def all(self, typ, **kwargs):
+        """
+        List all of type
+        Valid arguments:
+            skip : number of records to skip
+            limit : number of records to limit request to
+        """
         return self._load(self._request(self._url(typ, **kwargs)))
 
     def get(self, typ, id):
@@ -113,6 +119,12 @@ class IXFClient(object):
         return self._load(self._request(self._url(typ, id)))
 
     def create(self, typ, data):
+        """
+        Create new type
+        Valid arguments:
+            skip : number of records to skip
+            limit : number of records to limit request to
+        """
         res = self._request(self._url(typ), 'POST', data)
         if res.status != 201:
             data = res.read()
@@ -149,27 +161,32 @@ class IXFClient(object):
         return self._load(self._request(self._url(typ, id), 'DELETE'))
 
 
-    def ixp_all(self, **kwargs):
-        """
-        List all IXPs
-        Valid arguments:
-            skip : number of records to skip
-            limit : number of records to limit request to
-        """
-        return self.all('IXP', **kwargs)
+class TypeWrap(object):
+    def __init__(self, client, typ):
+        self.client = client
+        self.typ = typ
 
-    def ixp(self, id):
+    def all(self, **kwargs):
         """
-        Load IXP by id
+        List all
         """
-        return self.get('IXP', id)
+        return self.client.all(self.typ, **kwargs)
 
-    def ixp_save(self, data):
-        return self.save('IXP', data)
+    def get(self, id):
+        """
+        Load by id
+        """
+        return self.client.get(self.typ, id)
 
-    def ixp_rm(self, id):
+    def save(self, data):
         """
-        remove IXP by id
+        Save object
         """
-        return self.rm('IXP', id)
+        return self.client.save(self.typ, data)
+
+    def rm(self, id):
+        """
+        remove by id
+        """
+        return self.client.rm(self.typ, id)
 
