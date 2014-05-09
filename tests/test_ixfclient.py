@@ -39,8 +39,8 @@ class DictDiffer(object):
 class TestIXFClient(unittest.TestCase):
 
     def setUp(self):
-        self.db = IXFClient()
         self.db = IXFClient(host='localhost', port=7003, user='dev', password='test')
+        self.db = IXFClient()
 
     def _get_obj(self, typ, id):
         """

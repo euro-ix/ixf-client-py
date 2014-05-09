@@ -87,6 +87,8 @@ class IXFClient(object):
             data = {}
 
         if res.status < 300:
+            if not data:
+                return []
             return data.get('data', [])
 
         self._throw(res, data)
