@@ -1,8 +1,10 @@
 #!/bin/env python
 
+import base64
 import httplib
 import json
 import urllib
+import urlparse
 
 class IXFClient(object):
 
@@ -16,7 +18,7 @@ class IXFClient(object):
         self.port = 7010
         self.path = '/api/'
         self.user = None
-        self.passwd = None
+        self.password = None
         self.timeout = None
 
         # overwrite any param from keyword args
@@ -28,12 +30,7 @@ class IXFClient(object):
         """
         Build URL for connection
         """
-        url = 'https://' + self.host
-
-        if self.port != 443:
-            url = url + ":" + str(self.port)
-
-        url += self.path + __typ
+        url = self.path + __typ
 
         if __id:
             url += '/' + str(__id)
@@ -43,44 +40,56 @@ class IXFClient(object):
 
         return url
 
-    def _request(self, url, method='GET', data=None):
+    def _request(self, url, method='GET', data=None, cxn=None):
         """
         send the request, return response obj
         """
-        cxn = httplib.HTTPSConnection(self.host, self.port, strict=True, timeout=self.timeout)
+        if not cxn:
+            cxn = httplib.HTTPSConnection(self.host, self.port, strict=True, timeout=self.timeout)
 
         headers = {
-                  "Accept": "text/plain"
+                  "Accept": "application/json"
                   }
 
         if self.user:
-            auth = 'Basic ' + base64.urlsafe_b64encode("%s:%s" % (self.user, self.passwd))
+            auth = 'Basic ' + base64.urlsafe_b64encode("%s:%s" % (self.user, self.password))
             headers['Authorization'] = auth
 
         if data:
-            data = urllib.urlencode({'arg': json.dumps(data)})
-            headers["Content-type"] = "application/x-www-form-urlencoded"
+            data = json.dumps(data)
+            headers["Content-length"] = len(data)
+            headers["Content-type"] = "application/json"
 
-#        print "%s to %s data: '%s' " % (method, url, str(data))
+#        print "%s %s headers:'%s' data:'%s' " % (method, url, str(headers), str(data))
         cxn.request(method, url, data, headers)
 
         return cxn.getresponse()
 
-    def _load(self, req):
-        data = json.load(req)
-
-#        data = req.read()
-#        data = json.loads(data)
-#        print "got data: %s" % data
-
-        if 'error' in data:
-            err = data['error']
-            if err.startswith('Object not found'):
+    def _throw(self, res, data):
+        err = data.get('meta', {}).get('error', 'Unknown')
+        if res.status < 600:
+            if res.status == 404:
                 raise KeyError(err)
             else:
-                raise Exception(err)
+                raise Exception("%d %s" % (res.status, err))
 
-        return data
+        # Internal
+        raise Exception("Internal error %d %s" % (res.status, err))
+
+    def _load(self, res):
+        try:
+#            data = json.load(res)
+            data = res.read()
+            print "%d got data: %s" % (res.status, data)
+            data = json.loads(data)
+
+        except ValueError:
+            data = {}
+
+        if res.status < 300:
+            return data.get('data', [])
+
+        self._throw(res, data)
 
     def _mangle_data(self, data):
         if not 'id' in data and 'pk' in data:
@@ -101,18 +110,40 @@ class IXFClient(object):
         """
         return self._load(self._request(self._url(typ, id)))
 
+    def create(self, typ, data):
+        res = self._request(self._url(typ), 'POST', data)
+        if res.status != 201:
+            data = res.read()
+            self._throw(res, data)
+
+        print "loc", res.getheader('Location')
+        loc = res.getheader('Location')
+        if loc.startswith('/'):
+            return self._load(self._request(loc))
+
+        #self._new_connection(res.getheader('Location'))
+
+# check schema
+        #print self._new_connection(res.getheader('Location'))
+
+        url = urlparse.urlparse(loc)
+
+#        return self._load(self._request(data['meta']['url']))
+        cxn = httplib.HTTPSConnection(url.netloc, strict=True, timeout=self.timeout)
+        return self._load(self._request(url.path, cxn=cxn))
+
     def save(self, typ, data):
         """
-        Save the dataset pointed to by data
+        Save the dataset pointed to by data (create or update)
         """
         if 'id' in data:
             return self._load(self._request(self._url(typ, data['id']), 'PUT', data))
 
-        return self._load(self._request(self._url(typ), 'POST', data))
+        return self.create(typ, data)
 
     def update(self, typ, id, **kwargs):
         """
-        update just fields sent by keywork arg
+        update just fields sent by keyword args
         """
         return self._load(self._request(self._url(typ, id), 'PUT', kwargs))
 

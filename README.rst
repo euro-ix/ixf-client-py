@@ -63,7 +63,7 @@ or
 .. code-block:: python
 
     # writes require authentication
-    ixfc = IXFClient(user='guest, password='guest')
+    ixfc = IXFClient(user='guest', password='guest')
 
 or
 
@@ -92,7 +92,7 @@ Common operations
         "full_name": "Test IXP",
         "short_name": "TIX",
         }
-    response = self.db.save("IXP", data)
+    response = ixfc.save("IXP", data)
     ixpid = response['id']
 
     # update from keyword variables
